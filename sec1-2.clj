@@ -23,7 +23,7 @@
 (defn add [a b]
   (if (= a 0)
     b
-    (add (dec a) (inc b))))
+    (recur (dec a) (inc b))))
 
 ; The iterative process:
 ; (add 4 5)
@@ -424,7 +424,7 @@
 
 
 ;; Ex. 1.25
-; From a mathematical standpoint the code is perfectly find. However, it
+; From a mathematical standpoint the code is perfectly fine. However, it
 ; produces very large numbers (up to n^(n-1) for a test of n). This will give
 ; correct results in Clojure (and most other Lisps), but the handling of such
 ; huge numbers is very slow, compared to numbers that fit into machine words.
@@ -433,7 +433,47 @@
 
 ;; Ex. 1.26
 ; The original EXPMOD is a linear recursive process. By making two recursive
-; calls at each step, the process is tree-recursive. This means the runtime
-; grows exponentially with the tree-depth:
+; calls at each step, the process becomes tree-recursive. This means the
+; runtime grows exponentially with the tree-depth:
 ;  O(2^log(N)) = O(N)
+
+
+
+;; Ex. 1.27
+(defn fools-fermat? [n]
+  (every? (fn [a] (= (expmod a n n) a))
+          (range 1 n)))
+
+(every? fools-fermat? '(561 1105 1729 2465 2821 6601)) ; => true
+
+
+
+;; Ex. 1.28
+(defn expmod [base exp m]
+  (cond
+    (zero? exp) 1
+    (even? exp)
+      (let [x (expmod base (/ exp 2) m)
+            y (rem (square x) m)]
+        (if (and (not= x 1) (not= x (dec m)) (= y 1))
+          0
+          y))
+     :else
+      (rem (* base (expmod base (dec exp) m))
+           m)))
+
+(defn miller-rabin [n]
+  (let [r (inc (rand-int (dec n)))]
+    (= (expmod r n n) r)))
+
+(defn miller-rabin-prime?
+  ([n] (miller-rabin-prime? n 10))
+  ([n times] (cond
+               (zero? times) true
+               (miller-rabin n) (recur n (dec times))
+               :else false)))
+
+(every? miller-rabin-prime? '(3 5 19 37 101 1601)) ; => true
+
+(some miller-rabin-prime? '(561 1105 1729 2465 2821 6601)) ; => nil
 
